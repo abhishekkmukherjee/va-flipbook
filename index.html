@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean Modern Image Flipper</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .credits {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #343a40;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .twitter-link {
+            color: #1DA1F2;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .twitter-link:hover {
+            opacity: 0.8;
+        }
+
+        .twitter-icon {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        .flipper-container {
+            background-color: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            position: relative;
+            height: 600px;
+        }
+
+        #flipper {
+            width: 100%;
+            height: 100%;
+        }
+
+        .page {
+            background-size: contain;  /* Changed to contain for better image display */
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #fff;
+        }
+
+        .page-info {
+            text-align: center;
+            margin-top: 15px;
+            color: #6c757d;
+            font-size: 16px;
+        }
+
+        /* Tip hint */
+        .tip {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 50px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .tip.hidden {
+            opacity: 0;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .flipper-container {
+                height: 70vh;  /* Responsive height */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="flipper-container">
+            <div id="flipper">
+                <!-- Your actual image pages -->
+                <div class="page" style="background-image: url('images/Page\ 1.png')"></div>
+                <div class="page" style="background-image: url('images/Page\ 2.png')"></div>
+                <div class="page" style="background-image: url('images/Page\ 3.png')"></div>
+                <div class="page" style="background-image: url('images/Page\ 4.png')"></div>
+                <div class="page" style="background-image: url('images/Page\ 5.png')"></div>
+                <div class="page" style="background-image: url('images/Page\ 6.png')"></div>
+                <div class="page" style="background-image: url('images/Page\ 7.png')"></div>
+                <div class="page" style="background-image: url('images/Page\ 8.png')"></div>
+            </div>
+            
+            <div class="tip" id="tip">Pages auto-flip every 7 seconds</div>
+        </div>
+        
+        <div class="page-info" id="page-info">Page 1 of 8</div>
+        
+        <!-- Moved credits to bottom -->
+        <div class="credits">
+            Made by Abhishek Mukherjee 
+            <a href="http://x.com/abmukherjee" class="twitter-link" target="_blank">
+                <svg class="twitter-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1DA1F2">
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                </svg>
+                @abmukherjee
+            </a>
+        </div>
+    </div>
+
+    <!-- Audio element for page flip sound -->
+    <audio id="flip-sound" preload="auto">
+        <source src="#" type="audio/mpeg">
+        <!-- Fallback audio URL in case the first one doesn't work -->
+        <source src="#" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Total number of pages
+        const totalPages = 8; // Update this to match your actual number of pages
+        
+        // DOM elements
+        const flipper = $('#flipper');
+        const pageInfo = document.getElementById('page-info');
+        const tip = document.getElementById('tip');
+        const flipSound = document.getElementById('flip-sound');
+        
+        // Auto-flip timer
+        let autoFlipTimer;
+        
+        // Initialize turn.js
+        $(document).ready(function() {
+            flipper.turn({
+                width: $('.flipper-container').width(),
+                height: $('.flipper-container').height(),
+                elevation: 50,
+                gradients: true,
+                autoCenter: true,
+                display: 'single', // Show only one page at a time
+                when: {
+                    turning: function(event, page, pageObject) {
+                        updatePageInfo(page);
+                        // Play flip sound
+                        playFlipSound();
+                        // Reset auto-flip timer when manually flipped
+                        resetAutoFlipTimer();
+                    },
+                    turned: function(event, page, pageObject) {
+                        // Hide tip after first flip
+                        setTimeout(() => {
+                            tip.classList.add('hidden');
+                        }, 7000);
+                    }
+                }
+            });
+            
+            // Initial page info
+            updatePageInfo(flipper.turn('page'));
+            
+            // Add keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    flipper.turn('previous');
+                } else if (e.key === 'ArrowRight') {
+                    flipper.turn('next');
+                }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                flipper.turn('size', 
+                    $('.flipper-container').width(),
+                    $('.flipper-container').height());
+            });
+            
+            // Start auto-flip
+            startAutoFlip();
+        });
+        
+        // Update page info
+        function updatePageInfo(page) {
+            pageInfo.textContent = `Page ${page} of ${totalPages}`;
+        }
+        
+        // Play flip sound
+        function playFlipSound() {
+            flipSound.currentTime = 0;
+            flipSound.play().catch(err => {
+                console.log('Audio play failed:', err);
+                // Some browsers require user interaction before playing audio
+            });
+        }
+        
+        // Auto-flip functionality
+        function startAutoFlip() {
+            autoFlipTimer = setInterval(() => {
+                if (flipper.turn('page') >= totalPages) {
+                    flipper.turn('page', 1); // Loop back to first page
+                } else {
+                    flipper.turn('next');
+                    playFlipSound();
+                }
+            }, 7000); // Flip every 7 seconds (changed from 4 to 7)
+        }
+        
+        // Reset auto-flip timer
+        function resetAutoFlipTimer() {
+            clearInterval(autoFlipTimer);
+            startAutoFlip();
+        }
+    </script>
+</body>
+</html>
